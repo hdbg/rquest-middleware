@@ -6,4 +6,4 @@ members = [
 ]
 
 [workspace.dependencies]
-rquest = {version = "<=5.0.0", default-features = false}
+rquest = {version = ">=5.0.0", default-features = false}
