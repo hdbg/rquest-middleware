@@ -1,6 +1,9 @@
 [workspace]
 members = [
-  "reqwest-middleware",
-  "reqwest-tracing",
-  "reqwest-retry",
+  "rquest-middleware",
+  "rquest-tracing",
+  "rquest-retry",
 ]
+
+[workspace.dependencies]
+rquest = {version = "<=5.0.0", default-features = false}
