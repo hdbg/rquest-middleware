@@ -234,6 +234,18 @@ impl ClientWithMiddleware {
     pub fn websocket<U: IntoUrl>(&self, url: U) -> rquest::WebSocketRequestBuilder {
         self.inner.websocket(url)
     }
+
+    /// Retrieves the `User-Agent` header for this client.
+    ///
+    /// This method returns the `User-Agent` header value if it is set for this client.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<HeaderValue>` containing the `User-Agent` header value if it is set, or `None` if it is not.
+    #[inline]
+    pub fn user_agent(&self) -> Option<HeaderValue> {
+        self.inner.user_agent()
+    }
 }
 
 /// Create a `ClientWithMiddleware` without any middleware.
