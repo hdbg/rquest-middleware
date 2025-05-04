@@ -149,7 +149,15 @@ pub struct DefaultSpanBackend;
 impl ReqwestOtelSpanBackend for DefaultSpanBackend {
     fn on_request_start(req: &Request, ext: &mut Extensions) -> Span {
         let name = default_span_name(req, ext);
-        rquest_otel_span!(name = name, req)
+       
+        let span = rquest_otel_span!(level=crate::rquest_otel_span_macro::private::Level::DEBUG, name = name, req);
+
+        span.in_scope(|| {
+            let body = req.body().and_then(|b| b.as_bytes()).map(|b| String::from_utf8_lossy(b)).unwrap_or(Cow::Borrowed(""));
+
+            tracing::debug!(headers = ?req.headers(), body = %body, "http.request.start");
+        });
+        span
     }
 
     fn on_request_end(span: &Span, outcome: &Result<Response>, _: &mut Extensions) {
