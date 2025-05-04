@@ -16,8 +16,8 @@ use rquest_middleware::Error;
 ///
 /// ```
 /// use rquest_retry::{default_on_request_failure, policies::ExponentialBackoff, Retryable, RetryableStrategy, RetryTransientMiddleware};
-/// use rquest::{Request, Response};
-/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result};
+/// use rquest::{Request};
+/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result, Response};
 /// use http::Extensions;
 ///
 /// // Log each request to show that the requests will be retried
@@ -88,14 +88,14 @@ use rquest_middleware::Error;
 /// }
 /// ```
 pub trait RetryableStrategy {
-    fn handle(&self, res: &Result<rquest::Response, Error>) -> Option<Retryable>;
+    fn handle(&self, res: &Result<rquest_middleware::Response, Error>) -> Option<Retryable>;
 }
 
 /// The default [`RetryableStrategy`] for [`RetryTransientMiddleware`](crate::RetryTransientMiddleware).
 pub struct DefaultRetryableStrategy;
 
 impl RetryableStrategy for DefaultRetryableStrategy {
-    fn handle(&self, res: &Result<rquest::Response, Error>) -> Option<Retryable> {
+    fn handle(&self, res: &Result<rquest_middleware::Response, Error>) -> Option<Retryable> {
         match res {
             Ok(success) => default_on_request_success(success),
             Err(error) => default_on_request_failure(error),
@@ -110,7 +110,7 @@ impl RetryableStrategy for DefaultRetryableStrategy {
 /// * The status was 408 (request timeout) or 429 (too many requests)
 ///
 /// Note that success here means that the request finished without interruption, not that it was logically OK.
-pub fn default_on_request_success(success: &rquest::Response) -> Option<Retryable> {
+pub fn default_on_request_success(success: &rquest_middleware::Response) -> Option<Retryable> {
     let status = success.status();
     if status.is_server_error() {
         Some(Retryable::Transient)

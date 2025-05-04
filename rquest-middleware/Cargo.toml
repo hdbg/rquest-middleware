@@ -16,16 +16,20 @@ multipart = ["rquest/multipart"]
 json = ["rquest/json"]
 charset = ["rquest/charset"]
 websocket = ["rquest/websocket"]
+cookies = ["rquest/cookies"]
+stream = ["rquest/stream"]
 
 
 [dependencies]
 anyhow = "1.0.0"
 async-trait = "0.1.51"
+bytes = ">=1.0.0"
 http = "1.0.0"
 rquest.workspace = true
 serde = "1.0.106"
 thiserror = "1.0.21"
 tower-service = "0.3.0"
+tracing = ">=0.1.0"
 
 [dev-dependencies]
 rquest-retry = { path = "../rquest-retry" }

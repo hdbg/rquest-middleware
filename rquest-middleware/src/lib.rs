@@ -6,8 +6,8 @@
 //! requests is the same as with rquest:
 //!
 //! ```
-//! use rquest::{Client, Request, Response};
-//! use rquest_middleware::{ClientBuilder, Middleware, Next, Result};
+//! use rquest::{Client, Request};
+//! use rquest_middleware::{ClientBuilder, Middleware, Next, Result, Response};
 //! use http::Extensions;
 //!
 //! struct LoggingMiddleware;
@@ -53,9 +53,12 @@ mod client;
 mod error;
 mod middleware;
 mod req_init;
+mod response;
 
 pub use client::{ClientBuilder, ClientWithMiddleware, RequestBuilder};
 pub use error::{Error, Result};
 pub use middleware::{Middleware, Next};
 pub use req_init::{Extension, RequestInitialiser};
+pub use response::Response;
 pub use rquest;
+

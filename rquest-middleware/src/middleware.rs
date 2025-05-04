@@ -1,8 +1,9 @@
 use http::Extensions;
-use rquest::{Client, Request, Response};
+use rquest::{Client, Request};
 
 
 use crate::error::{Error, Result};
+use crate::response::Response;
 
 use std::sync::Arc;
 
@@ -12,8 +13,8 @@ use std::sync::Arc;
 /// # Example
 ///
 /// ```
-/// use rquest::{Client, Request, Response};
-/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result};
+/// use rquest::{Client, Request};
+/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result, Response};
 /// use http::Extensions;
 ///
 /// struct TransparentMiddleware;
@@ -81,10 +82,7 @@ pub struct Next<'a> {
     middlewares: &'a [Arc<dyn Middleware>],
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
-#[cfg(target_arch = "wasm32")]
-pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'a>>;
 
 impl<'a> Next<'a> {
     pub(crate) fn new(client: &'a Client, middlewares: &'a [Arc<dyn Middleware>]) -> Self {
@@ -103,7 +101,11 @@ impl<'a> Next<'a> {
             self.middlewares = rest;
             current.handle(req, extensions, self)
         } else {
-            Box::pin(async move { self.client.execute(req).await.map_err(Error::from) })
+            Box::pin(async move { 
+    
+                let resp = self.client.execute(req).await.map_err(Error::from)?;
+                Ok(Response::from_original(resp)) 
+            })
         }
     }
 }

@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use http::Extensions;
 use matchit::Router;
-use rquest::{Request, Response, StatusCode as RequestStatusCode, Url};
-use rquest_middleware::{Error, Result};
+use rquest::{Request, StatusCode as RequestStatusCode, Url};
+use rquest_middleware::{Error, Result, Response};
 use tracing::{warn, Span};
 
 use crate::rquest_otel_span;

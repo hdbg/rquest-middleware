@@ -6,8 +6,8 @@ use crate::{retryable::Retryable, retryable_strategy::DefaultRetryableStrategy, 
 use anyhow::anyhow;
 use http::Extensions;
 use retry_policies::RetryPolicy;
-use rquest::{Request, Response};
-use rquest_middleware::{Error, Middleware, Next, Result};
+use rquest::Request;
+use rquest_middleware::{Error, Middleware, Next, Result, Response};
 
 #[doc(hidden)]
 // We need this macro because tracing expects the level to be const:

@@ -1,6 +1,6 @@
 use http::Extensions;
-use rquest::{Request, Response};
-use rquest_middleware::{Middleware, Next, Result};
+use rquest::{Request};
+use rquest_middleware::{Middleware, Next, Result, Response};
 use tracing::Instrument;
 
 use crate::{DefaultSpanBackend, ReqwestOtelSpanBackend};
@@ -30,8 +30,7 @@ impl Default for TracingMiddleware<DefaultSpanBackend> {
     }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
-#[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
+#[async_trait::async_trait]
 impl<ReqwestOtelSpan> Middleware for TracingMiddleware<ReqwestOtelSpan>
 where
     ReqwestOtelSpan: ReqwestOtelSpanBackend + Sync + Send + 'static,

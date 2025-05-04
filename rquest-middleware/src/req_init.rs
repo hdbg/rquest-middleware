@@ -37,8 +37,8 @@ where
 /// This is a good way to inject extensions to middleware deeper in the stack
 ///
 /// ```
-/// use rquest::{Client, Request, Response};
-/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result, Extension};
+/// use rquest::{Client, Request};
+/// use rquest_middleware::{ClientBuilder, Middleware, Next, Result, Extension, Response};
 /// use http::Extensions;
 ///
 /// #[derive(Clone)]

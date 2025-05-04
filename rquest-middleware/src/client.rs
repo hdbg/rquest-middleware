@@ -1,6 +1,6 @@
 use http::Extensions;
 use rquest::header::{HeaderMap, HeaderName, HeaderValue};
-use rquest::{Body, Client, IntoUrl, Method, Request, Response};
+use rquest::{Body, Client, IntoUrl, Method, Request};
 use serde::Serialize;
 use std::convert::TryFrom;
 use std::fmt::{self, Display};
@@ -12,6 +12,7 @@ use rquest::multipart;
 use crate::error::Result;
 use crate::middleware::{Middleware, Next};
 use crate::RequestInitialiser;
+use crate::response::Response;
 
 /// A `ClientBuilder` is used to build a [`ClientWithMiddleware`].
 ///
@@ -278,7 +279,8 @@ mod service {
 
     use crate::Result;
     use http::Extensions;
-    use rquest::{Request, Response};
+    use rquest::Request;
+    use crate::response::Response;
 
     use crate::{middleware::BoxFuture, ClientWithMiddleware, Next};
 

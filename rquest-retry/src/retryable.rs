@@ -15,7 +15,7 @@ impl Retryable {
     ///
     /// Returns `None` if the response object does not contain any errors.
     ///
-    pub fn from_rquest_response(res: &Result<rquest::Response, Error>) -> Option<Self> {
+    pub fn from_rquest_response(res: &Result<rquest_middleware::Response, Error>) -> Option<Self> {
         DefaultRetryableStrategy.handle(res)
     }
 }
