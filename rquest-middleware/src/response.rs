@@ -228,7 +228,7 @@ self.inner.headers()    }
     pub async fn json<T: serde::de::DeserializeOwned>(self) -> crate::Result<T> {
         let full = self.text().await?;
 
-        serde_json::from_str(&full).map_err(crate::error::decode)
+        serde_json::from_str(&full).map_err(|e| crate::error::Error::Rquest(e.into()))
     }
 
     /// Get the full response body as `Bytes`.
