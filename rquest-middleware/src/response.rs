@@ -225,7 +225,7 @@ self.inner.headers()    }
     /// [`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
     #[cfg(feature = "json")]
     #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-    pub async fn json<T: DeserializeOwned>(self) -> crate::Result<T> {
+    pub async fn json<T: serde::de::DeserializeOwned>(self) -> crate::Result<T> {
         let full = self.text().await?;
 
         serde_json::from_str(&full).map_err(crate::error::decode)
