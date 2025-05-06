@@ -11,6 +11,7 @@ pub enum Error {
     /// Error from the underlying rquest client
     #[error(transparent)]
     Rquest(#[from] rquest::Error),
+    
 }
 
 impl Error {

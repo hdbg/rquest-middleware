@@ -1,39 +1,60 @@
-use std::net::SocketAddr;
-
 use bytes::Bytes;
+use http::Extensions;
 use rquest::Url;
 
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Response {
-    inner: rquest::Response,
+    response_body: Bytes,
+    parts: http::response::Parts,
+    url: rquest::Url,
 }
 
 impl Response {
-    pub(crate) fn from_original(inner: rquest::Response) -> Self {
-        Self { inner }
+    pub(crate) async fn from_original(inner: rquest::Response) -> crate::Result<Self> {
+        let response = http::response::Response::new(());
+        let (mut parts, ()) = response.into_parts();
+
+        parts.status = inner.status();
+        parts.headers = inner.headers().clone();
+        parts.version = inner.version();
+        parts.extensions = Extensions::default();
+
+        let url = inner.url().clone();
+
+        let preloaded_bytes = inner
+            .bytes()
+            .await
+            .map_err(|e| crate::error::Error::Rquest(e.into()))?;
+
+        Ok(Self {
+            response_body: preloaded_bytes,
+            parts,
+            url,
+        })
     }
 
     /// Get the `StatusCode` of this `Response`.
     #[inline]
     pub fn status(&self) -> rquest::StatusCode {
-        self.inner.status()
+        self.parts.status
     }
 
     /// Get the HTTP `Version` of this `Response`.
     #[inline]
     pub fn version(&self) -> rquest::Version {
-self.inner.version()    }
+        self.parts.version
+    }
 
     /// Get the `Headers` of this `Response`.
     #[inline]
     pub fn headers(&self) -> &rquest::header::HeaderMap {
-self.inner.headers()    }
+        &self.parts.headers
+    }
 
     /// Get a mutable reference to the `Headers` of this `Response`.
     #[inline]
     pub fn headers_mut(&mut self) -> &mut rquest::header::HeaderMap {
-        self.inner.headers_mut()
+        &mut self.parts.headers
     }
 
     /// Get the content length of the response, if it is known.
@@ -49,44 +70,26 @@ self.inner.headers()    }
     /// - The response is gzipped and automatically decoded (thus changing the
     ///   actual decoded length).
     pub fn content_length(&self) -> Option<u64> {
-        self.inner.content_length()
-    }
-
-    /// Retrieve the cookies contained in the response.
-    ///
-    /// Note that invalid 'Set-Cookie' headers will be ignored.
-    ///
-    /// # Optional
-    ///
-    /// This requires the optional `cookies` feature to be enabled.
-    #[cfg(feature = "cookies")]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(feature = "cookies"))
-    )]
-    pub fn cookies(&self) -> impl Iterator<Item = cookie::Cookie> {
-        self.inner.cookies()
+        self.headers()
+            .get(rquest::header::CONTENT_LENGTH)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.parse::<u64>().ok())
     }
 
     /// Get the final `Url` of this `Response`.
     #[inline]
     pub fn url(&self) -> &Url {
-        self.inner.url()
-    }
-
-    /// Get the remote address used to get this `Response`.
-    pub fn remote_addr(&self) -> Option<SocketAddr> {
-        self.inner.remote_addr()
+        &self.url
     }
 
     /// Returns a reference to the associated extensions.
     pub fn extensions(&self) -> &http::Extensions {
-        self.inner.extensions()
+        &self.parts.extensions
     }
 
     /// Returns a mutable reference to the associated extensions.
     pub fn extensions_mut(&mut self) -> &mut http::Extensions {
-        self.inner.extensions_mut()
+        &mut self.parts.extensions
     }
 
     // body methods
@@ -120,12 +123,9 @@ self.inner.headers()    }
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn text(self) -> crate::Result<String> {
-        let text = self.inner.text().await?;
-
-        tracing::debug!(body = text, "http.response.body");
-
-        Ok(text)
+    pub fn text(self) -> crate::Result<String> {
+        String::from_utf8(self.response_body.to_vec())
+            .map_err(|e| crate::error::Error::Middleware(anyhow::Error::from(e)))
     }
 
     /// Get the full response text given a specific encoding.
@@ -225,10 +225,9 @@ self.inner.headers()    }
     /// [`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
     #[cfg(feature = "json")]
     #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-    pub async fn json<T: serde::de::DeserializeOwned>(self) -> crate::Result<T> {
-        let full = self.text().await?;
-
-        serde_json::from_str(&full).map_err(|e| crate::error::Error::Rquest(e.into()))
+    pub fn json<T: serde::de::DeserializeOwned>(self) -> crate::Result<T> {
+        serde_json::from_slice(self.preloaded_bytes.as_slice())
+            .map_err(|e| crate::error::Error::Rquest(e.into()))
     }
 
     /// Get the full response body as `Bytes`.
@@ -249,35 +248,8 @@ self.inner.headers()    }
     /// # }
     /// ```
     pub async fn bytes(self) -> crate::Result<Bytes> {
-        let bytes = self.inner.bytes().await?;
-        tracing::debug!(bytes = ?bytes, "http.response.body");
-        Ok(bytes)
+        Ok(self.response_body)
     }
-
-    /// Stream a chunk of the response body.
-    ///
-    /// When the response body has been exhausted, this will return `None`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut res = rquest::Client::new().get("https://hyper.rs").send().await?;
-    ///
-    /// while let Some(chunk) = res.chunk().await? {
-    ///     println!("Chunk: {chunk:?}");
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn chunk(&mut self) -> crate::Result<Option<Bytes>> {
-        let chunk = self.inner.chunk().await?;
-        if let Some(ref chunk) = chunk {
-            tracing::debug!(chunk = ?chunk, "http.response.body");
-        }
-        Ok(chunk)
-    }
-
 
     // util methods
 
@@ -303,35 +275,13 @@ self.inner.headers()    }
     /// # fn main() {}
     /// ```
     pub fn error_for_status(self) -> crate::Result<Self> {
-       Ok(self.inner.error_for_status().map(Self::from_original)?)
+        if self.status().is_client_error() || self.status().is_server_error() {
+            Err(crate::Error::Middleware(anyhow::Error::msg(format!(
+                "Response error: {}",
+                self.status()
+            ))))
+        } else {
+            Ok(self)
+        }
     }
-
-    /// Turn a reference to a response into an error if the server returned an error.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use rquest::Response;
-    /// fn on_response(res: &Response) {
-    ///     match res.error_for_status_ref() {
-    ///         Ok(_res) => (),
-    ///         Err(err) => {
-    ///             // asserting a 400 as an example
-    ///             // it could be any status between 400...599
-    ///             assert_eq!(
-    ///                 err.status(),
-    ///                 Some(rquest::StatusCode::BAD_REQUEST)
-    ///             );
-    ///         }
-    ///     }
-    /// }
-    /// # fn main() {}
-    /// ```
-    pub fn error_for_status_ref(&self) -> crate::Result<&Self> {
-        self.inner
-            .error_for_status_ref()
-            .map(|_| self)
-            .map_err(|err| err.into())
-    }
-
 }

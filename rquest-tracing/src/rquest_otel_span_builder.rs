@@ -33,28 +33,6 @@ pub const ERROR_MESSAGE: &str = "error.message";
 /// The `error.cause_chain` field added to the span by [`rquest_otel_span`]
 pub const ERROR_CAUSE_CHAIN: &str = "error.cause_chain";
 
-/// The `http.method` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_METHOD: &str = "http.method";
-/// The `http.scheme` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_SCHEME: &str = "http.scheme";
-/// The `http.host` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_HOST: &str = "http.host";
-/// The `http.url` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_URL: &str = "http.url";
-/// The `host.port` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const NET_HOST_PORT: &str = "net.host.port";
-/// The `http.status_code` field added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_STATUS_CODE: &str = "http.status_code";
-/// The `http.user_agent` added to the span by [`rquest_otel_span`]
-#[cfg(feature = "deprecated_attributes")]
-pub const HTTP_USER_AGENT: &str = "http.user_agent";
-
 /// [`ReqwestOtelSpanBackend`] allows you to customise the span attached by
 /// [`TracingMiddleware`] to incoming requests.
 ///
@@ -92,6 +70,13 @@ pub fn default_on_request_success(span: &Span, response: &Response) {
         span.record(OTEL_STATUS_CODE, span_status);
     }
     span.record(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16());
+
+    let body = response.clone().text().unwrap_or("failted to read body".into());
+
+    span.in_scope(|| {
+        tracing::debug!(headers = ?response.headers(), body = %body, "response");
+    });
+
     #[cfg(feature = "deprecated_attributes")]
     {
         let user_agent = get_header_value("user_agent", response.headers());
@@ -136,7 +121,7 @@ pub fn default_span_name<'a>(req: &'a Request, ext: &'a Extensions) -> Cow<'a, s
                 Cow::Owned(format!("{} UNKNOWN", req.method().as_str()))
             })
     } else {
-        Cow::Borrowed(req.method().as_str())
+        Cow::Borrowed("http.request")
     }
 }
 
@@ -155,7 +140,7 @@ impl ReqwestOtelSpanBackend for DefaultSpanBackend {
         span.in_scope(|| {
             let body = req.body().and_then(|b| b.as_bytes()).map(|b| String::from_utf8_lossy(b)).unwrap_or(Cow::Borrowed(""));
 
-            tracing::debug!(headers = ?req.headers(), body = %body, "http.request.start");
+            tracing::debug!(headers = ?req.headers(), body = %body, "request");
         });
         span
     }

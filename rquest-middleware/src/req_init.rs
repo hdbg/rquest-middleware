@@ -72,7 +72,7 @@ where
 ///         .with(LoggingMiddleware)
 ///         .build();
 ///     let resp = client.get("https://truelayer.com").send().await.unwrap();
-///     println!("TrueLayer page HTML: {}", resp.text().await.unwrap());
+///     println!("TrueLayer page HTML: {}", resp.text().unwrap());
 /// }
 /// ```
 pub struct Extension<T>(pub T);

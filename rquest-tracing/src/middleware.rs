@@ -65,7 +65,7 @@ where
             };
 
             // Run the request
-            let outcome = next.run(req, extensions).await;
+            let outcome = next.run(req, extensions).instrument(request_span.clone()).await;
             ReqwestOtelSpan::on_request_end(&request_span, &outcome, extensions);
             outcome
         };

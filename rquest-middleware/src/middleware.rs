@@ -104,7 +104,7 @@ impl<'a> Next<'a> {
             Box::pin(async move { 
     
                 let resp = self.client.execute(req).await.map_err(Error::from)?;
-                Ok(Response::from_original(resp)) 
+                Ok(Response::from_original(resp).await?) 
             })
         }
     }
