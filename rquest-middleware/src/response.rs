@@ -226,7 +226,7 @@ impl Response {
     #[cfg(feature = "json")]
     #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
     pub fn json<T: serde::de::DeserializeOwned>(self) -> crate::Result<T> {
-        serde_json::from_slice(self.preloaded_bytes.as_slice())
+        serde_json::from_slice(self.response_body.as_ref())
             .map_err(|e| crate::error::Error::Rquest(e.into()))
     }
 
